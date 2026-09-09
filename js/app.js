@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const STORAGE = { settings: 'iticket-monitor.settings.v1', history: 'iticket-monitor.history.v1' };
+  const STORAGE = { settings: 'iticket-monitor.settings.v2', history: 'iticket-monitor.history.v2' };
   const HISTORY_LIMIT = 1000;
   const CHART_LIMIT = 30;
   const COLORS = ['#1769e0', '#8b5cf6', '#079c90', '#d95087', '#725a37', '#0f7d99'];
@@ -12,8 +12,8 @@
   const DEFAULT_SETTINGS = {
     mode: 'mock', autoEnabled: true, intervalSec: 30, warningMs: 3000, criticalMs: 10000, timeoutMs: 15000, failureConfirmCount: 3,
     servers: [
-      { id: 'ticketap-1', name: 'ticketAP-1', url: 'https://ticketap-1.example.com/internal/monitor/health', enabled: true, mockType: 'normal' },
-      { id: 'ticketap-2', name: 'ticketAP-2', url: 'https://ticketap-2.example.com/internal/monitor/health', enabled: true, mockType: 'random' }
+      { id: 'ticket-shoplist', name: '관광지조회', url: 'https://iticket.nicetcm.co.kr/api-v2/extrn/ticket/shoplist', enabled: true, mockType: 'normal' },
+      { id: 'ticket-healthcheck', name: '헬스체크', url: 'https://iticket.nicetcm.co.kr/api-v2/extrn/ticket/monitor/healthcheck', enabled: true, mockType: 'normal' }
     ]
   };
 
@@ -23,6 +23,7 @@
   let nextRunAt = null;
   let schedulerTimer = null;
   let activeStatusFilter = 'all';
+  let authToken = '';
   let chartPoints = [];
   let resizeTimer = null;
   let lastFocusedElement = null;
@@ -111,7 +112,10 @@
   }
 
   async function requestRealApi(server, signal) {
-    const response = await fetch(server.url, { method: 'GET', headers: { Accept: 'application/json' }, cache: 'no-store', signal });
+    const authorization = authToken ? (authToken.toLowerCase().startsWith('bearer ') ? authToken : `Bearer ${authToken}`) : '';
+    const headers = { Accept: 'application/json', 'Content-Type': 'application/json' };
+    if (authorization) headers.Authorization = authorization;
+    const response = await fetch(server.url, { method: 'POST', headers, body: '{}', cache: 'no-store', signal });
     let payload = null;
     try { const text = await response.text(); payload = text ? JSON.parse(text) : {}; } catch { payload = { status: 'UNKNOWN', message: '응답이 JSON 형식이 아닙니다.' }; }
     return { httpCode: response.status, payload, httpOk: response.ok };
@@ -301,7 +305,7 @@
 
   function openSettings() {
     lastFocusedElement = document.activeElement;
-    $('#setting-mode').value = settings.mode; $('#setting-interval').value = String(settings.intervalSec); $('#setting-auto').checked = settings.autoEnabled; $('#setting-warning').value = settings.warningMs; $('#setting-critical').value = settings.criticalMs; $('#setting-timeout').value = settings.timeoutMs; $('#setting-failures').value = settings.failureConfirmCount; $('#settings-error').textContent = '';
+    $('#setting-mode').value = settings.mode; $('#setting-interval').value = String(settings.intervalSec); $('#setting-auto').checked = settings.autoEnabled; $('#setting-warning').value = settings.warningMs; $('#setting-critical').value = settings.criticalMs; $('#setting-timeout').value = settings.timeoutMs; $('#setting-failures').value = settings.failureConfirmCount; $('#setting-auth-token').value = authToken; $('#settings-error').textContent = '';
     renderSettingsServerList(); openModal('settings-modal');
   }
   function openServerEditor(server = null) {
@@ -316,6 +320,7 @@
     if (!Number.isFinite(warningMs) || !Number.isFinite(criticalMs) || warningMs < 100 || criticalMs <= warningMs) { $('#settings-error').textContent = '장애 기준은 지연 기준보다 큰 숫자로 입력해 주세요.'; return; }
     if (!Number.isFinite(timeoutMs) || timeoutMs < 500) { $('#settings-error').textContent = '요청 타임아웃은 500ms 이상으로 입력해 주세요.'; return; }
     if (!Number.isInteger(failures) || failures < 1 || failures > 10) { $('#settings-error').textContent = '연속 실패 횟수는 1~10 사이 정수로 입력해 주세요.'; return; }
+    authToken = $('#setting-auth-token').value.trim();
     settings = { ...settings, mode: $('#setting-mode').value, intervalSec: Number($('#setting-interval').value), autoEnabled: $('#setting-auto').checked, warningMs, criticalMs, timeoutMs, failureConfirmCount: failures };
     saveSettings(); startScheduler(); closeModal('settings-modal'); renderAll(); showToast('모니터링 설정을 저장했습니다.');
   }

@@ -137,6 +137,7 @@ tbody tr:hover { background: #f8fafd; }
 .settings-section h3 { margin: 0 0 14px; font-size: 1rem; }.subsection-heading { justify-content: space-between; margin-bottom: 12px; }.subsection-heading h3 { margin: 0; }
 .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
 .field { display: grid; gap: 7px; color: #415269; font-size: .86rem; font-weight: 700; }
+.field-wide { grid-column: 1 / -1; }
 .field small { color: var(--muted); font-weight: 500; }.field > input, .field > select { width: 100%; }
 .field-switch { grid-template-columns: 1fr auto; align-items: center; align-content: center; min-height: 68px; padding: 0 13px; border: 1px solid var(--line); border-radius: 9px; position: relative; }
 .field-switch input { position: absolute; opacity: 0; pointer-events: none; }.switch-ui { width: 42px; height: 23px; border-radius: 999px; background: #aebbc9; padding: 3px; transition: background .2s; }.switch-ui::after { content: ""; display: block; width: 17px; height: 17px; border-radius: 50%; background: #fff; transition: transform .2s; box-shadow: 0 1px 4px rgba(0,0,0,.2); }.field-switch input:checked + .switch-ui { background: var(--blue); }.field-switch input:checked + .switch-ui::after { transform: translateX(19px); }.field-switch input:focus-visible + .switch-ui { outline: 3px solid rgba(23,105,224,.25); }

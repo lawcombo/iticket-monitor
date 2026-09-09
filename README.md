@@ -1,6 +1,6 @@
 # iticket-monitor
 
-GitHub Pages에서 실행되는 정적 AP 서버 상태 모니터링 대시보드입니다. 현재는 실제 API 없이 모든 동작을 확인할 수 있는 목업 모드를 기본으로 제공합니다.
+GitHub Pages에서 실행되는 정적 AP 서버 상태 모니터링 대시보드입니다. 현재는 실제 API 없이 모든 동작을 확인할 수 있는 목업 모드를 기본으로 제공합니다. 기본 점검 대상은 `관광지조회`와 `헬스체크`이며 API 주소는 설정 화면에서 변경할 수 있습니다. 브라우저 저장소가 비어 있으면 이 기본값으로 자동 복원됩니다.
 
 ## 로컬 실행
 
@@ -39,11 +39,15 @@ python -m http.server 8000
 
 ## 실제 API 연결
 
-설정에서 실행 모드를 **실제 API 모드**로 바꾸고 서버의 API 주소를 입력합니다. 기본 요청 방식은 다음과 같습니다.
+설정에서 실행 모드를 **실제 API 모드**로 바꾸고 서버의 API 주소와 Authorization Bearer 토큰을 입력합니다. 기본 요청 방식은 다음과 같습니다.
 
 ```http
-GET https://서버주소/internal/monitor/health
+POST https://서버주소/internal/monitor/health
 Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {설정 화면에서 입력한 토큰}
+
+{}
 ```
 
 예상 응답은 다음과 같습니다.
@@ -76,7 +80,7 @@ Access-Control-Allow-Headers: Accept, Content-Type
 
 ## 보안 및 운영 제한
 
-- API 키, 비밀번호, 토큰 등 민감정보를 프런트엔드 소스나 `localStorage`에 저장하면 안 됩니다. GitHub Pages의 코드는 방문자에게 공개됩니다.
+- API 키, 비밀번호, 토큰 등 민감정보를 프런트엔드 소스나 `localStorage`에 저장하면 안 됩니다. GitHub Pages의 코드는 방문자에게 공개됩니다. 설정 화면의 Bearer 토큰은 현재 탭 메모리에만 보관하며 새로고침하면 삭제됩니다.
 - 인증이 필요하다면 별도의 안전한 중계 서버 또는 인증 프록시를 사용하세요.
 - 이 화면은 서버가 아니라 사용자의 브라우저에서 점검합니다. 브라우저 탭이 열려 있을 때만 모니터링하며, 탭을 닫거나 장치가 절전 상태가 되면 점검도 중단됩니다.
 - 브라우저 백그라운드 탭에서는 타이머가 지연될 수 있습니다. 다시 활성화하면 자동 점검 일정을 복구합니다.
