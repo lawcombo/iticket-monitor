@@ -4,7 +4,7 @@
 
 ## 설치
 
-1. [Windows 위젯 다운로드](https://lawcombo.github.io/iticket-monitor/download/iticket-monitor-widget-v1.0.0.zip)를 내려받습니다.
+1. [Windows 위젯 다운로드](https://lawcombo.github.io/iticket-monitor/download/iticket-monitor-widget-v1.0.1.zip)를 내려받습니다.
 2. ZIP 파일의 압축을 해제합니다.
 3. `install.cmd`를 더블클릭합니다.
 4. 첫 실행 창에서 API Bearer 토큰을 입력합니다.

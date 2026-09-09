@@ -76,7 +76,7 @@ Access-Control-Allow-Headers: Accept, Content-Type, Authorization
 
 ## Windows 신호등 위젯
 
-브라우저를 열지 않아도 API를 점검하는 Windows용 항상 위 위젯을 제공합니다. [위젯 ZIP 다운로드](https://lawcombo.github.io/iticket-monitor/download/iticket-monitor-widget-v1.0.0.zip) 후 압축을 해제하고 `install.cmd`를 실행합니다. 위젯 클릭 시 이 대시보드가 열리고, 우클릭하면 즉시 점검·서버별 ON/OFF·점검 주기·자동 실행·종료를 선택할 수 있습니다. 상세 사용법은 `WINDOWS-WIDGET.md`를 참고하세요.
+브라우저를 열지 않아도 API를 점검하는 Windows용 항상 위 위젯을 제공합니다. [위젯 ZIP 다운로드](https://lawcombo.github.io/iticket-monitor/download/iticket-monitor-widget-v1.0.1.zip) 후 압축을 해제하고 `install.cmd`를 실행합니다. 위젯 클릭 시 이 대시보드가 열리고, 우클릭하면 즉시 점검·서버별 ON/OFF·점검 주기·자동 실행·종료를 선택할 수 있습니다. 상세 사용법은 `WINDOWS-WIDGET.md`를 참고하세요.
 
 ## 파일 구조
 

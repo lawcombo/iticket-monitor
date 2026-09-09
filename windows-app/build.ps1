@@ -40,11 +40,17 @@ finally {
     Remove-Item -LiteralPath $temporarySource -Force -ErrorAction SilentlyContinue
 }
 
-Copy-Item -LiteralPath (Join-Path $projectDirectory 'package\install.cmd') -Destination $outputDirectory -Force
-Copy-Item -LiteralPath (Join-Path $projectDirectory 'package\uninstall.cmd') -Destination $outputDirectory -Force
+$asciiEncoding = [System.Text.Encoding]::ASCII
+foreach ($scriptName in @('install.cmd', 'uninstall.cmd')) {
+    $sourcePath = Join-Path $projectDirectory ('package\' + $scriptName)
+    $targetPath = Join-Path $outputDirectory $scriptName
+    $scriptText = [System.IO.File]::ReadAllText($sourcePath)
+    $scriptText = $scriptText -replace "`r?`n", "`r`n"
+    [System.IO.File]::WriteAllText($targetPath, $scriptText, $asciiEncoding)
+}
 Copy-Item -LiteralPath (Join-Path $projectDirectory 'package\README.txt') -Destination $outputDirectory -Force
 
-$zipPath = Join-Path $downloadDirectory 'iticket-monitor-widget-v1.0.0.zip'
+$zipPath = Join-Path $downloadDirectory 'iticket-monitor-widget-v1.0.1.zip'
 Compress-Archive -Path (Join-Path $outputDirectory '*') -DestinationPath $zipPath -Force
 
 Write-Host "EXE: $outputDirectory\iticket-monitor-widget.exe"
