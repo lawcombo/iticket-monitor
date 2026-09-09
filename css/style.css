@@ -125,6 +125,7 @@ tbody tr:hover { background: #f8fafd; }
 .history-status { display: inline-flex; align-items: center; gap: 6px; font-weight: 800; }.history-status::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: currentColor; }.history-status.normal { color: var(--green); }.history-status.delay, .history-status.detected { color: var(--orange); }.history-status.down { color: var(--red); }
 .table-empty { padding: 35px; }.table-wrap table:has(tbody:not(:empty)) + .table-empty { display: none; }
 .footer { display: flex; justify-content: space-between; gap: 18px; padding: 22px 3px 0; color: var(--muted); font-size: .76rem; }
+.widget-download { margin-left: 8px; color: var(--blue); font-weight: 800; text-decoration: none; }.widget-download:hover { text-decoration: underline; }
 .modal-backdrop { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 20px; background: rgba(12, 26, 45, .52); backdrop-filter: blur(3px); }
 .modal-backdrop[hidden] { display: none; }.modal-nested { z-index: 60; }
 .modal { width: min(890px, 100%); max-height: min(820px, calc(100vh - 40px)); display: flex; flex-direction: column; background: #fff; border-radius: 18px; box-shadow: 0 30px 80px rgba(0,0,0,.27); overflow: hidden; }

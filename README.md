@@ -74,11 +74,17 @@ Access-Control-Allow-Headers: Accept, Content-Type, Authorization
 - 브라우저 백그라운드 탭에서는 타이머가 지연될 수 있습니다. 다시 활성화하면 자동 점검 일정을 복구합니다.
 - 설정과 최근 이력(최대 1,000건)은 해당 브라우저의 `localStorage`에만 저장됩니다.
 
+## Windows 신호등 위젯
+
+브라우저를 열지 않아도 API를 점검하는 Windows용 항상 위 위젯을 제공합니다. [위젯 ZIP 다운로드](https://lawcombo.github.io/iticket-monitor/download/iticket-monitor-widget-v1.0.0.zip) 후 압축을 해제하고 `install.cmd`를 실행합니다. 위젯 클릭 시 이 대시보드가 열리고, 우클릭하면 즉시 점검·서버별 ON/OFF·점검 주기·자동 실행·종료를 선택할 수 있습니다. 상세 사용법은 `WINDOWS-WIDGET.md`를 참고하세요.
+
 ## 파일 구조
 
 ```text
 index.html       화면 구조
 css/style.css    디자인과 반응형 스타일
 js/app.js        실제 API 점검, 저장, 차트, 설정 기능
+windows-app/     Windows 위젯 소스와 빌드·설치 파일
+download/        배포용 Windows 위젯 ZIP
 README.md        실행·배포·연동 안내
 ```
