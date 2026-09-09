@@ -4,6 +4,7 @@
   const STORAGE = { settings: 'iticket-monitor.settings.v2', history: 'iticket-monitor.history.v2' };
   const HISTORY_LIMIT = 1000;
   const CHART_LIMIT = 30;
+  const DEFAULT_AUTH_TOKEN = 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJpdGlja2V0IiwiY2hhbm5lbFR5cGUiOiJSRVNWIiwiaWF0IjoxNzAwNzMzMDM5LCJleHAiOjIwMTYzMDkwMzksImlzcyI6Imh0dHBzOi8vaXRpY2tldC5uaWNldGNtLmNvLmtyIiwic3ViIjoiaXRpY2tldCJ9.RTYUpfsXmebeV1rokogKpPP9e0KwSdo6_GTo-_-q_QE';
   const COLORS = ['#1769e0', '#8b5cf6', '#079c90', '#d95087', '#725a37', '#0f7d99'];
   const MOCK_LABELS = { normal: '정상 응답', delay: '3초 이상 지연', criticalDelay: '10초 이상 지연', http500: 'HTTP 500 오류', network: '네트워크 오류', timeout: '15초 타임아웃', random: '정상과 오류 무작위' };
   const STATUS_META = {
@@ -23,7 +24,7 @@
   let nextRunAt = null;
   let schedulerTimer = null;
   let activeStatusFilter = 'all';
-  let authToken = '';
+  let authToken = DEFAULT_AUTH_TOKEN;
   let chartPoints = [];
   let resizeTimer = null;
   let lastFocusedElement = null;
