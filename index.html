@@ -61,8 +61,8 @@
             <dd><span class="mode-pill" id="auto-state">실행 중 · 30초</span></dd>
           </div>
           <div>
-            <dt>실행 모드</dt>
-            <dd><span class="mode-pill mode-mock" id="mode-state">목업 모드</span></dd>
+            <dt>호출 방식</dt>
+            <dd><span class="mode-pill mode-real" id="mode-state">실제 POST</span></dd>
           </div>
         </dl>
       </section>
@@ -145,7 +145,6 @@
           <section class="settings-section" aria-labelledby="operation-settings-title">
             <h3 id="operation-settings-title">운영 설정</h3>
             <div class="form-grid">
-              <label class="field"><span>실행 모드</span><select id="setting-mode"><option value="mock">목업 모드</option><option value="real">실제 API 모드</option></select></label>
               <label class="field"><span>호출 주기</span><select id="setting-interval"><option value="5">5초</option><option value="10">10초</option><option value="30">30초</option><option value="60">60초</option></select></label>
               <label class="field field-switch"><span>자동 점검</span><input id="setting-auto" type="checkbox" role="switch"><span class="switch-ui" aria-hidden="true"></span></label>
               <label class="field"><span>지연 판단 기준 (ms)</span><input id="setting-warning" type="number" min="100" step="100" required></label>
@@ -178,7 +177,6 @@
           <label class="field"><span>시스템명</span><input id="server-name" type="text" maxlength="40" placeholder="예: ticketAP-3" required></label>
           <label class="field"><span>API 주소</span><input id="server-url" type="url" placeholder="https://example.com/internal/monitor/health" required></label>
           <label class="field field-switch"><span>사용 여부</span><input id="server-enabled" type="checkbox" role="switch"><span class="switch-ui" aria-hidden="true"></span></label>
-          <label class="field"><span>목업 응답 유형</span><select id="server-mock-type"><option value="normal">정상 응답</option><option value="delay">3초 이상 지연</option><option value="criticalDelay">10초 이상 지연</option><option value="http500">HTTP 500 오류</option><option value="network">네트워크 오류</option><option value="timeout">15초 타임아웃</option><option value="random">정상과 오류 무작위 발생</option></select></label>
           <p class="form-error" id="server-error" role="alert"></p>
         </div>
         <footer class="modal-footer"><button class="button button-secondary" type="button" data-close-modal="server-modal">취소</button><button class="button button-primary" type="submit">서버 저장</button></footer>

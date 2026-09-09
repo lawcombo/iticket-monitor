@@ -1,20 +1,19 @@
 (() => {
   'use strict';
 
-  const STORAGE = { settings: 'iticket-monitor.settings.v2', history: 'iticket-monitor.history.v2' };
+  const STORAGE = { settings: 'iticket-monitor.settings.v3', history: 'iticket-monitor.history.v2' };
   const HISTORY_LIMIT = 1000;
   const CHART_LIMIT = 30;
   const DEFAULT_AUTH_TOKEN = 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJpdGlja2V0IiwiY2hhbm5lbFR5cGUiOiJSRVNWIiwiaWF0IjoxNzAwNzMzMDM5LCJleHAiOjIwMTYzMDkwMzksImlzcyI6Imh0dHBzOi8vaXRpY2tldC5uaWNldGNtLmNvLmtyIiwic3ViIjoiaXRpY2tldCJ9.RTYUpfsXmebeV1rokogKpPP9e0KwSdo6_GTo-_-q_QE';
   const COLORS = ['#1769e0', '#8b5cf6', '#079c90', '#d95087', '#725a37', '#0f7d99'];
-  const MOCK_LABELS = { normal: '정상 응답', delay: '3초 이상 지연', criticalDelay: '10초 이상 지연', http500: 'HTTP 500 오류', network: '네트워크 오류', timeout: '15초 타임아웃', random: '정상과 오류 무작위' };
   const STATUS_META = {
     idle: { label: '점검 전', symbol: '—' }, checking: { label: '점검 중', symbol: '↻' }, normal: { label: '정상', symbol: '✓' }, delay: { label: '지연', symbol: '△' }, detected: { label: '이상 감지', symbol: '!' }, down: { label: '장애', symbol: '×' }
   };
   const DEFAULT_SETTINGS = {
-    mode: 'mock', autoEnabled: true, intervalSec: 30, warningMs: 3000, criticalMs: 10000, timeoutMs: 15000, failureConfirmCount: 3,
+    autoEnabled: true, intervalSec: 30, warningMs: 3000, criticalMs: 10000, timeoutMs: 15000, failureConfirmCount: 3,
     servers: [
-      { id: 'ticket-shoplist', name: '관광지조회', url: 'https://iticket.nicetcm.co.kr/api-v2/extrn/ticket/shoplist', enabled: true, mockType: 'normal' },
-      { id: 'ticket-healthcheck', name: '헬스체크', url: 'https://iticket.nicetcm.co.kr/api-v2/extrn/ticket/monitor/healthcheck', enabled: true, mockType: 'normal' }
+      { id: 'ticket-shoplist', name: '관광지조회', url: 'https://iticket.nicetcm.co.kr/api-v2/extrn/ticket/shoplist', enabled: true },
+      { id: 'ticket-healthcheck', name: '헬스체크', url: 'https://iticket.nicetcm.co.kr/api-v2/extrn/ticket/monitor/healthcheck', enabled: true }
     ]
   };
 
@@ -37,7 +36,7 @@
   function loadSettings() {
     const saved = safeParse(localStorage.getItem(STORAGE.settings), null);
     if (!saved || !Array.isArray(saved.servers)) return cloneDefaults();
-    return { ...cloneDefaults(), ...saved, servers: saved.servers.map(s => ({ enabled: true, mockType: 'normal', ...s })) };
+    return { ...cloneDefaults(), ...saved, servers: saved.servers.map(s => ({ enabled: true, ...s })) };
   }
   function loadHistory() {
     const saved = safeParse(localStorage.getItem(STORAGE.history), []);
@@ -96,22 +95,6 @@
     return runtime.get(id);
   }
 
-  async function simulateMock(server, signal) {
-    let type = server.mockType || 'normal';
-    if (type === 'random') {
-      const candidates = ['normal', 'normal', 'normal', 'delay', 'http500', 'network'];
-      type = candidates[Math.floor(Math.random() * candidates.length)];
-    }
-    const jitter = Math.floor(Math.random() * 260);
-    if (type === 'timeout') { await delay(settings.timeoutMs + 50, signal); return { httpCode: null, payload: null, forcedTimeout: true }; }
-    if (type === 'network') { await delay(420 + jitter, signal); throw new TypeError('Failed to fetch'); }
-    if (type === 'http500') { await delay(520 + jitter, signal); return { httpCode: 500, payload: { status: 'DOWN', message: '서버 내부 오류가 발생했습니다.', checkedAt: new Date().toISOString() } }; }
-    if (type === 'delay') { await delay(Math.max(settings.warningMs + 250, 3250) + jitter, signal); return { httpCode: 200, payload: { status: 'WARNING', message: '응답이 평소보다 느립니다.', checkedAt: new Date().toISOString() } }; }
-    if (type === 'criticalDelay') { await delay(Math.max(settings.criticalMs + 250, 10250) + jitter, signal); return { httpCode: 200, payload: { status: 'NORMAL', message: '응답 지연 기준을 초과했습니다.', checkedAt: new Date().toISOString() } }; }
-    await delay(350 + jitter, signal);
-    return { httpCode: 200, payload: { status: 'NORMAL', message: '정상', checkedAt: new Date().toISOString() } };
-  }
-
   async function requestRealApi(server, signal) {
     const authorization = authToken ? (authToken.toLowerCase().startsWith('bearer ') ? authToken : `Bearer ${authToken}`) : '';
     const headers = { Accept: 'application/json', 'Content-Type': 'application/json' };
@@ -145,7 +128,7 @@
     const started = performance.now();
     let result;
     try {
-      const raw = settings.mode === 'mock' ? await simulateMock(server, controller.signal) : await requestRealApi(server, controller.signal);
+      const raw = await requestRealApi(server, controller.signal);
       const elapsedMs = performance.now() - started;
       result = { ...assessResult({ ...raw, elapsedMs }), httpCode: raw.httpCode, responseMs: elapsedMs };
     } catch (error) {
@@ -221,8 +204,8 @@
     $('#last-checked-at').textContent = formatDateTime(latest);
     $('#auto-state').textContent = settings.autoEnabled ? `실행 중 · ${settings.intervalSec}초` : '중지됨';
     $('#auto-state').className = `mode-pill${settings.autoEnabled ? '' : ' stopped'}`;
-    $('#mode-state').textContent = settings.mode === 'mock' ? '목업 모드' : '실제 API 모드';
-    $('#mode-state').className = `mode-pill mode-${settings.mode}`;
+    $('#mode-state').textContent = '실제 POST';
+    $('#mode-state').className = 'mode-pill mode-real';
     const toggle = $('#toggle-auto-button');
     toggle.innerHTML = settings.autoEnabled ? '<span class="button-icon" aria-hidden="true">Ⅱ</span><span>자동 점검 중지</span>' : '<span class="button-icon" aria-hidden="true">▶</span><span>자동 점검 시작</span>';
     $('#server-count-note').textContent = `사용 서버 ${enabled.length}대 · 전체 ${settings.servers.length}대`;
@@ -237,7 +220,7 @@
       const fragment = $('#server-card-template').content.cloneNode(true);
       const card = $('.server-card', fragment); const state = getRuntime(server.id); const status = state.checking ? 'checking' : state.displayStatus; const meta = STATUS_META[status];
       card.classList.add(`status-${status}`); card.dataset.serverId = server.id;
-      $('.server-index', card).textContent = `SERVER ${String(index + 1).padStart(2, '0')} · ${settings.mode === 'mock' ? MOCK_LABELS[server.mockType] : '실제 API'}`;
+      $('.server-index', card).textContent = `SERVER ${String(index + 1).padStart(2, '0')} · POST 실제 호출`;
       $('.server-name', card).textContent = server.name; $('.server-url', card).textContent = server.url; $('.server-url', card).title = server.url;
       $('.status-symbol', card).textContent = meta.symbol; $('.status-label', card).textContent = meta.label;
       $('.response-time', card).textContent = state.checking ? '측정 중…' : formatDuration(state.responseMs);
@@ -299,18 +282,18 @@
 
   function renderSettingsServerList() {
     const list = $('#server-settings-list');
-    list.innerHTML = settings.servers.map(server => `<div class="server-setting-row"><strong>${escapeHtml(server.name)} ${server.enabled ? '' : '<span class="section-note">(사용 안 함)</span>'}</strong><small title="${escapeHtml(server.url)}">${escapeHtml(server.url)} · ${escapeHtml(MOCK_LABELS[server.mockType] || '')}</small><span class="server-row-actions"><button class="button button-secondary button-small" type="button" data-edit-server="${escapeHtml(server.id)}">수정</button><button class="button button-danger-ghost button-small" type="button" data-delete-server="${escapeHtml(server.id)}">삭제</button></span></div>`).join('') || '<p class="empty-state">등록된 서버가 없습니다.</p>';
+    list.innerHTML = settings.servers.map(server => `<div class="server-setting-row"><strong>${escapeHtml(server.name)} ${server.enabled ? '' : '<span class="section-note">(사용 안 함)</span>'}</strong><small title="${escapeHtml(server.url)}">POST · ${escapeHtml(server.url)}</small><span class="server-row-actions"><button class="button button-secondary button-small" type="button" data-edit-server="${escapeHtml(server.id)}">수정</button><button class="button button-danger-ghost button-small" type="button" data-delete-server="${escapeHtml(server.id)}">삭제</button></span></div>`).join('') || '<p class="empty-state">등록된 서버가 없습니다.</p>';
   }
 
   function renderAll() { renderOverview(); renderServerCards(); renderHistory(); renderChart(); }
 
   function openSettings() {
     lastFocusedElement = document.activeElement;
-    $('#setting-mode').value = settings.mode; $('#setting-interval').value = String(settings.intervalSec); $('#setting-auto').checked = settings.autoEnabled; $('#setting-warning').value = settings.warningMs; $('#setting-critical').value = settings.criticalMs; $('#setting-timeout').value = settings.timeoutMs; $('#setting-failures').value = settings.failureConfirmCount; $('#setting-auth-token').value = authToken; $('#settings-error').textContent = '';
+    $('#setting-interval').value = String(settings.intervalSec); $('#setting-auto').checked = settings.autoEnabled; $('#setting-warning').value = settings.warningMs; $('#setting-critical').value = settings.criticalMs; $('#setting-timeout').value = settings.timeoutMs; $('#setting-failures').value = settings.failureConfirmCount; $('#setting-auth-token').value = authToken; $('#settings-error').textContent = '';
     renderSettingsServerList(); openModal('settings-modal');
   }
   function openServerEditor(server = null) {
-    $('#server-modal-title').textContent = server ? '서버 수정' : '서버 추가'; $('#server-id').value = server?.id || ''; $('#server-name').value = server?.name || ''; $('#server-url').value = server?.url || ''; $('#server-enabled').checked = server?.enabled ?? true; $('#server-mock-type').value = server?.mockType || 'normal'; $('#server-error').textContent = ''; openModal('server-modal'); setTimeout(() => $('#server-name').focus(), 0);
+    $('#server-modal-title').textContent = server ? '서버 수정' : '서버 추가'; $('#server-id').value = server?.id || ''; $('#server-name').value = server?.name || ''; $('#server-url').value = server?.url || ''; $('#server-enabled').checked = server?.enabled ?? true; $('#server-error').textContent = ''; openModal('server-modal'); setTimeout(() => $('#server-name').focus(), 0);
   }
   function openModal(id) { const modal = document.getElementById(id); modal.hidden = false; document.body.style.overflow = 'hidden'; }
   function closeModal(id) { const modal = document.getElementById(id); modal.hidden = true; if ($$('.modal-backdrop:not([hidden])').length === 0) document.body.style.overflow = ''; if (id === 'settings-modal' && lastFocusedElement) lastFocusedElement.focus(); }
@@ -322,7 +305,7 @@
     if (!Number.isFinite(timeoutMs) || timeoutMs < 500) { $('#settings-error').textContent = '요청 타임아웃은 500ms 이상으로 입력해 주세요.'; return; }
     if (!Number.isInteger(failures) || failures < 1 || failures > 10) { $('#settings-error').textContent = '연속 실패 횟수는 1~10 사이 정수로 입력해 주세요.'; return; }
     authToken = $('#setting-auth-token').value.trim();
-    settings = { ...settings, mode: $('#setting-mode').value, intervalSec: Number($('#setting-interval').value), autoEnabled: $('#setting-auto').checked, warningMs, criticalMs, timeoutMs, failureConfirmCount: failures };
+    settings = { ...settings, intervalSec: Number($('#setting-interval').value), autoEnabled: $('#setting-auto').checked, warningMs, criticalMs, timeoutMs, failureConfirmCount: failures };
     saveSettings(); startScheduler(); closeModal('settings-modal'); renderAll(); showToast('모니터링 설정을 저장했습니다.');
   }
 
@@ -331,7 +314,7 @@
     if (!name) { $('#server-error').textContent = '시스템명을 입력해 주세요.'; return; }
     if (settings.servers.some(server => server.id !== id && server.name.toLowerCase() === name.toLowerCase())) { $('#server-error').textContent = '이미 등록된 시스템명입니다.'; return; }
     if (!validateUrl(url)) { $('#server-error').textContent = 'http:// 또는 https://로 시작하는 올바른 API 주소를 입력해 주세요.'; return; }
-    const data = { id: id || makeId(name), name, url, enabled: $('#server-enabled').checked, mockType: $('#server-mock-type').value };
+    const data = { id: id || makeId(name), name, url, enabled: $('#server-enabled').checked };
     if (id) settings.servers = settings.servers.map(server => server.id === id ? data : server); else settings.servers.push(data);
     saveSettings(); getRuntime(data.id); closeModal('server-modal'); renderSettingsServerList(); renderAll(); showToast(id ? '서버 정보를 수정했습니다.' : '서버를 추가했습니다.');
   }
