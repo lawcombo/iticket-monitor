@@ -76,7 +76,7 @@ h1 { margin: 0; font-size: clamp(1.22rem, 2vw, 1.55rem); letter-spacing: -.035em
 .section-heading { justify-content: space-between; gap: 20px; margin-bottom: 15px; }
 .section-heading h2 { margin: 0; font-size: 1.25rem; letter-spacing: -.025em; }
 .section-note { margin: 0; color: var(--muted); font-size: .86rem; }
-.server-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.server-grid { display: grid; grid-template-columns: repeat(var(--server-columns, 1), minmax(0, 1fr)); gap: 18px; }
 .server-card { --card-color: var(--gray); position: relative; min-width: 0; padding: 23px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
 .server-card.status-normal { --card-color: var(--green); }.server-card.status-delay, .server-card.status-detected { --card-color: var(--orange); }.server-card.status-down { --card-color: var(--red); }.server-card.status-checking { --card-color: var(--blue); }
 .card-accent { position: absolute; inset: 0 0 auto; height: 4px; background: var(--card-color); }

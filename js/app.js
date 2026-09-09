@@ -246,6 +246,7 @@
   function renderServerCards() {
     const grid = $('#server-grid'); grid.replaceChildren();
     const servers = settings.servers.filter(server => server.enabled);
+    grid.style.setProperty('--server-columns', String(Math.max(1, servers.length)));
     if (!servers.length) { grid.innerHTML = '<div class="panel empty-state">사용 중인 서버가 없습니다. 설정에서 서버를 추가하거나 사용 상태를 변경하세요.</div>'; return; }
     servers.forEach((server, index) => {
       const fragment = $('#server-card-template').content.cloneNode(true);
