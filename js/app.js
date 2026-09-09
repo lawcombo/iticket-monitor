@@ -58,14 +58,33 @@
   function formatDuration(ms) { return Number.isFinite(ms) ? `${Math.max(0, Math.round(ms)).toLocaleString('ko-KR')} ms` : '—'; }
   function makeId(name) { return `${name.toLowerCase().replace(/[^a-z0-9가-힣]+/g, '-').replace(/(^-|-$)/g, '') || 'server'}-${Date.now().toString(36)}`; }
   function delay(ms, signal) { return new Promise((resolve, reject) => { const id = setTimeout(resolve, ms); if (signal) signal.addEventListener('abort', () => { clearTimeout(id); reject(new DOMException('Aborted', 'AbortError')); }, { once: true }); }); }
+  function cleanResponseMessage(value, fallback = '응답 메시지가 없습니다.') {
+    if (value === null || value === undefined) return fallback;
+    const text = typeof value === 'string' ? value : (() => { try { return JSON.stringify(value); } catch { return ''; } })();
+    const cleaned = text
+      .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, ' ')
+      .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, ' ')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    return cleaned ? cleaned.slice(0, 240) : fallback;
+  }
 
   /** 실제 API 응답 형식이 바뀌면 이 함수만 수정하면 됩니다. */
   function normalizeApiResponse(payload) {
     const source = payload && typeof payload === 'object' ? payload : {};
     const rawStatus = String(source.status ?? source.state ?? 'UNKNOWN').toUpperCase();
+    const responseMessage = source.message
+      ?? source.msg
+      ?? source.errorMessage
+      ?? source.error_description
+      ?? source.detail
+      ?? source.resultMessage
+      ?? source.resMsg
+      ?? (typeof source.error === 'string' ? source.error : source.error?.message);
     return {
       apiStatus: rawStatus,
-      message: typeof source.message === 'string' && source.message.trim() ? source.message.trim().slice(0, 160) : '응답 메시지가 없습니다.',
+      message: cleanResponseMessage(responseMessage),
       checkedAt: source.checkedAt || source.timestamp || null
     };
   }
@@ -101,15 +120,20 @@
     if (authorization) headers.Authorization = authorization;
     const response = await fetch(server.url, { method: 'POST', headers, body: '{}', cache: 'no-store', signal });
     let payload = null;
-    try { const text = await response.text(); payload = text ? JSON.parse(text) : {}; } catch { payload = { status: 'UNKNOWN', message: '응답이 JSON 형식이 아닙니다.' }; }
+    const text = await response.text();
+    try { payload = text ? JSON.parse(text) : {}; }
+    catch { payload = { status: 'UNKNOWN', message: cleanResponseMessage(text, '응답 본문이 없거나 읽을 수 없습니다.') }; }
     return { httpCode: response.status, payload, httpOk: response.ok };
   }
 
   function assessResult({ httpCode, httpOk = true, payload, elapsedMs, forcedTimeout = false }) {
     const normalized = normalizeApiResponse(payload);
-    if (forcedTimeout) return { status: 'down', message: `요청 제한시간(${settings.timeoutMs.toLocaleString()}ms)을 초과했습니다.`, normalized };
-    if (!httpOk || (httpCode && (httpCode < 200 || httpCode >= 300))) return { status: 'down', message: `HTTP ${httpCode || '오류'} 응답이 발생했습니다.`, normalized };
-    if (normalized.apiStatus === 'CRITICAL' || normalized.apiStatus === 'DOWN') return { status: 'down', message: normalized.message, normalized };
+    if (forcedTimeout) return { status: 'down', message: `POST 요청 실패 · 제한시간(${settings.timeoutMs.toLocaleString()}ms)을 초과했습니다.`, normalized };
+    if (!httpOk || (httpCode && (httpCode < 200 || httpCode >= 300))) {
+      const received = normalized.message === '응답 메시지가 없습니다.' ? '서버 응답 메시지 없음' : normalized.message;
+      return { status: 'down', message: `POST 요청 실패 · HTTP ${httpCode || '오류'} · ${received}`, normalized };
+    }
+    if (normalized.apiStatus === 'CRITICAL' || normalized.apiStatus === 'DOWN') return { status: 'down', message: `API 장애 응답 · ${normalized.message}`, normalized };
     if (normalized.apiStatus === 'WARNING') return { status: 'delay', message: normalized.message, normalized };
     if (elapsedMs >= settings.criticalMs) return { status: 'down', message: '장애 응답시간 기준을 초과했습니다.', normalized };
     if (elapsedMs >= settings.warningMs) return { status: 'delay', message: '지연 응답시간 기준을 초과했습니다.', normalized };
@@ -134,7 +158,14 @@
     } catch (error) {
       const elapsedMs = performance.now() - started;
       const timedOut = error?.name === 'AbortError';
-      result = { status: 'down', httpCode: null, responseMs: elapsedMs, message: timedOut ? `요청 제한시간(${settings.timeoutMs.toLocaleString()}ms)을 초과했습니다.` : '서버에 연결할 수 없습니다. 네트워크 또는 CORS 설정을 확인하세요.' };
+      result = {
+        status: 'down',
+        httpCode: null,
+        responseMs: elapsedMs,
+        message: timedOut
+          ? `POST 요청 실패 · 제한시간(${settings.timeoutMs.toLocaleString()}ms)을 초과했습니다.`
+          : 'POST 요청 실패 · 브라우저가 서버 응답을 읽지 못했습니다. 네트워크 또는 CORS 설정을 확인하세요.'
+      };
     } finally { clearTimeout(timeoutId); }
     applyCheckResult(server, state, result);
   }

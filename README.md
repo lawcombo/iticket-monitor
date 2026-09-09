@@ -48,7 +48,7 @@ Authorization: Bearer {설정 화면에서 입력한 토큰}
 
 응답 필드가 바뀌면 `js/app.js`의 `normalizeApiResponse(payload)` 함수만 수정하면 됩니다. 실제 요청 자체를 바꾸려면 같은 파일의 `requestRealApi(server, signal)` 함수를 수정합니다.
 
-JSON이 아니거나 일부 필드가 없는 응답도 화면 전체가 중단되지 않도록 안전하게 처리합니다.
+JSON이 아니거나 일부 필드가 없는 응답도 화면 전체가 중단되지 않도록 안전하게 처리합니다. HTTP 오류가 발생하면 요청 실패 여부, HTTP 상태코드, 서버가 반환한 오류 메시지를 서버 카드와 점검 이력에 함께 표시합니다. 단, CORS 또는 네트워크 차단으로 브라우저가 응답 자체를 읽지 못한 경우에는 서버 응답 본문을 표시할 수 없습니다.
 
 ## HTTPS와 CORS 주의사항
 
@@ -58,8 +58,8 @@ API 서버는 GitHub Pages 출처의 브라우저 요청을 허용하도록 CORS
 
 ```http
 Access-Control-Allow-Origin: https://lawcombo.github.io
-Access-Control-Allow-Methods: GET, OPTIONS
-Access-Control-Allow-Headers: Accept, Content-Type
+Access-Control-Allow-Methods: POST, OPTIONS
+Access-Control-Allow-Headers: Accept, Content-Type, Authorization
 ```
 
 운영 환경에서는 허용 출처를 필요한 도메인으로만 제한하세요. CORS 오류는 프런트엔드 코드만으로 우회할 수 없습니다.
