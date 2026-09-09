@@ -27,6 +27,8 @@ python -m http.server 8000
 
 서버 관리에서 시스템명과 API 주소를 등록하면 자동 점검 또는 즉시 점검 시 해당 주소를 호출합니다. Authorization Bearer 토큰은 소스 기본값으로 적용되며 설정 화면에서 현재 탭에 한해 교체할 수 있습니다. 기본 요청 방식은 다음과 같습니다.
 
+서버 관리 목록의 호출 스위치가 `ON`인 서버만 자동 점검과 전체 즉시 점검 대상에 포함됩니다. `OFF`로 바꾸면 설정이 즉시 브라우저에 저장되며 이후 점검 호출에서 제외됩니다.
+
 ```http
 POST https://서버주소/internal/monitor/health
 Accept: application/json

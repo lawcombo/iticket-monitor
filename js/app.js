@@ -313,7 +313,19 @@
 
   function renderSettingsServerList() {
     const list = $('#server-settings-list');
-    list.innerHTML = settings.servers.map(server => `<div class="server-setting-row"><strong>${escapeHtml(server.name)} ${server.enabled ? '' : '<span class="section-note">(사용 안 함)</span>'}</strong><small title="${escapeHtml(server.url)}">POST · ${escapeHtml(server.url)}</small><span class="server-row-actions"><button class="button button-secondary button-small" type="button" data-edit-server="${escapeHtml(server.id)}">수정</button><button class="button button-danger-ghost button-small" type="button" data-delete-server="${escapeHtml(server.id)}">삭제</button></span></div>`).join('') || '<p class="empty-state">등록된 서버가 없습니다.</p>';
+    list.innerHTML = settings.servers.map(server => `<div class="server-setting-row">
+      <strong>${escapeHtml(server.name)}</strong>
+      <small title="${escapeHtml(server.url)}">POST · ${escapeHtml(server.url)}</small>
+      <span class="server-row-actions">
+        <label class="server-call-toggle" title="${escapeHtml(server.name)} 호출 여부">
+          <span class="toggle-state">${server.enabled ? 'ON' : 'OFF'}</span>
+          <input type="checkbox" role="switch" data-toggle-server="${escapeHtml(server.id)}" aria-label="${escapeHtml(server.name)} 호출 여부" ${server.enabled ? 'checked' : ''}>
+          <span class="switch-ui" aria-hidden="true"></span>
+        </label>
+        <button class="button button-secondary button-small" type="button" data-edit-server="${escapeHtml(server.id)}">수정</button>
+        <button class="button button-danger-ghost button-small" type="button" data-delete-server="${escapeHtml(server.id)}">삭제</button>
+      </span>
+    </div>`).join('') || '<p class="empty-state">등록된 서버가 없습니다.</p>';
   }
 
   function renderAll() { renderOverview(); renderServerCards(); renderHistory(); renderChart(); }
@@ -356,6 +368,12 @@
     settings.servers = settings.servers.filter(item => item.id !== id); runtime.delete(id); saveSettings(); renderSettingsServerList(); renderAll(); showToast('서버 설정을 삭제했습니다.');
   }
 
+  function toggleServerEnabled(id, enabled) {
+    const server = settings.servers.find(item => item.id === id); if (!server) return;
+    server.enabled = enabled; saveSettings(); renderSettingsServerList(); renderAll();
+    showToast(`${server.name} 호출을 ${enabled ? 'ON' : 'OFF'}으로 변경했습니다.`);
+  }
+
   function resetSettings() {
     if (!window.confirm('모니터링 설정과 서버 목록을 기본값으로 되돌릴까요? 점검 이력은 유지됩니다.')) return;
     settings = cloneDefaults(); runtime.clear(); hydrateRuntime(); saveSettings(); startScheduler(); openSettings(); renderAll(); showToast('설정을 기본값으로 초기화했습니다.');
@@ -386,6 +404,9 @@
       const editButton = event.target.closest('[data-edit-server]'); if (editButton) openServerEditor(settings.servers.find(server => server.id === editButton.dataset.editServer));
       const deleteButton = event.target.closest('[data-delete-server]'); if (deleteButton) deleteServer(deleteButton.dataset.deleteServer);
       const filter = event.target.closest('[data-status-filter]'); if (filter) { activeStatusFilter = filter.dataset.statusFilter; $$('.filter-chip').forEach(button => button.classList.toggle('active', button === filter)); renderHistory(); }
+    });
+    document.addEventListener('change', event => {
+      const toggle = event.target.closest('[data-toggle-server]'); if (toggle) toggleServerEnabled(toggle.dataset.toggleServer, toggle.checked);
     });
     $$('.modal-backdrop').forEach(backdrop => backdrop.addEventListener('mousedown', event => { if (event.target === backdrop) closeModal(backdrop.id); }));
     document.addEventListener('keydown', event => { if (event.key === 'Escape') { const open = $$('.modal-backdrop:not([hidden])').at(-1); if (open) closeModal(open.id); } });
