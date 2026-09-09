@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="AP 서버 상태와 응답시간을 확인하는 정적 모니터링 대시보드">
+  <meta name="color-scheme" content="light">
+  <title>통합 서버 상태 모니터링</title>
+  <link rel="stylesheet" href="./css/style.css">
+  <script src="./js/app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">본문으로 바로가기</a>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand-block">
+        <div class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></div>
+        <div>
+          <p class="eyebrow">ITICKET · OPERATIONS</p>
+          <h1>통합 서버 상태 모니터링</h1>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <div class="current-time" aria-live="polite">
+          <span id="current-date">—</span>
+          <strong id="current-time">—</strong>
+        </div>
+        <button class="button button-secondary" id="toggle-auto-button" type="button">
+          <span class="button-icon" aria-hidden="true">Ⅱ</span><span>자동 점검 중지</span>
+        </button>
+        <button class="button button-primary" id="refresh-all-button" type="button">
+          <span class="button-icon" aria-hidden="true">↻</span><span>전체 즉시 점검</span>
+        </button>
+        <button class="icon-button" id="settings-button" type="button" aria-label="설정 열기" title="설정">⚙</button>
+      </div>
+    </header>
+
+    <main id="main-content">
+      <section class="overview" aria-labelledby="overview-title">
+        <div class="overview-main">
+          <p class="section-kicker" id="overview-title">실시간 운영 현황</p>
+          <div class="overall-line">
+            <span class="overall-status status-idle" id="overall-status">
+              <span class="status-symbol" aria-hidden="true">—</span>
+              <span id="overall-status-text">점검 전</span>
+            </span>
+            <p id="overall-summary">등록된 서버의 첫 점검을 준비하고 있습니다.</p>
+          </div>
+        </div>
+        <dl class="overview-stats">
+          <div>
+            <dt>마지막 점검</dt>
+            <dd id="last-checked-at">—</dd>
+          </div>
+          <div>
+            <dt>다음 점검까지</dt>
+            <dd id="next-check-countdown">—</dd>
+          </div>
+          <div>
+            <dt>자동 호출</dt>
+            <dd><span class="mode-pill" id="auto-state">실행 중 · 30초</span></dd>
+          </div>
+          <div>
+            <dt>실행 모드</dt>
+            <dd><span class="mode-pill mode-mock" id="mode-state">목업 모드</span></dd>
+          </div>
+        </dl>
+      </section>
+
+      <section class="section" aria-labelledby="servers-title">
+        <div class="section-heading">
+          <div>
+            <p class="section-kicker">SERVER HEALTH</p>
+            <h2 id="servers-title">서버 상태</h2>
+          </div>
+          <p class="section-note" id="server-count-note">사용 서버 0대</p>
+        </div>
+        <div class="server-grid" id="server-grid"></div>
+      </section>
+
+      <section class="section panel" aria-labelledby="chart-title">
+        <div class="section-heading chart-heading">
+          <div>
+            <p class="section-kicker">RESPONSE TIME</p>
+            <h2 id="chart-title">최근 응답시간</h2>
+          </div>
+          <div class="chart-thresholds" id="chart-thresholds" aria-label="응답시간 기준"></div>
+        </div>
+        <div class="chart-wrap" id="chart-wrap">
+          <canvas id="response-chart" role="img" aria-label="서버별 최근 30건 응답시간 차트"></canvas>
+          <div class="chart-tooltip" id="chart-tooltip" role="tooltip" hidden></div>
+          <p class="empty-state" id="chart-empty">수집된 데이터가 없습니다.</p>
+        </div>
+        <div class="chart-legend" id="chart-legend"></div>
+      </section>
+
+      <section class="section panel history-panel" aria-labelledby="history-title">
+        <div class="section-heading">
+          <div>
+            <p class="section-kicker">CHECK HISTORY</p>
+            <h2 id="history-title">점검 이력</h2>
+          </div>
+          <p class="section-note"><strong id="history-count">0</strong>건 · 최대 1,000건 보관</p>
+        </div>
+        <div class="history-toolbar">
+          <div class="filter-group" role="group" aria-label="상태 필터">
+            <button class="filter-chip active" type="button" data-status-filter="all">전체</button>
+            <button class="filter-chip" type="button" data-status-filter="normal">정상</button>
+            <button class="filter-chip" type="button" data-status-filter="delay">지연</button>
+            <button class="filter-chip" type="button" data-status-filter="failure">장애</button>
+          </div>
+          <div class="toolbar-actions">
+            <label class="select-label" for="system-filter">시스템</label>
+            <select id="system-filter" class="select-control"><option value="all">전체 시스템</option></select>
+            <button class="button button-secondary button-small" id="csv-button" type="button">CSV 다운로드</button>
+            <button class="button button-danger-ghost button-small" id="clear-history-button" type="button">이력 전체 삭제</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th scope="col">점검 시각</th><th scope="col">시스템명</th><th scope="col">상태</th><th scope="col">HTTP</th><th scope="col">응답시간</th><th scope="col">결과 메시지</th></tr>
+            </thead>
+            <tbody id="history-body"></tbody>
+          </table>
+          <p class="empty-state table-empty" id="history-empty">조건에 맞는 점검 이력이 없습니다.</p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <span>브라우저 기반 모니터링 · 창이 열려 있는 동안 동작합니다.</span>
+      <span id="storage-state">설정과 이력을 이 브라우저에 저장합니다.</span>
+    </footer>
+  </div>
+
+  <div class="modal-backdrop" id="settings-modal" hidden>
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+      <header class="modal-header">
+        <div><p class="section-kicker">MONITOR SETTINGS</p><h2 id="settings-title">모니터링 설정</h2></div>
+        <button class="icon-button modal-close" type="button" data-close-modal="settings-modal" aria-label="설정 닫기">×</button>
+      </header>
+      <form id="settings-form" novalidate>
+        <div class="settings-content">
+          <section class="settings-section" aria-labelledby="operation-settings-title">
+            <h3 id="operation-settings-title">운영 설정</h3>
+            <div class="form-grid">
+              <label class="field"><span>실행 모드</span><select id="setting-mode"><option value="mock">목업 모드</option><option value="real">실제 API 모드</option></select></label>
+              <label class="field"><span>호출 주기</span><select id="setting-interval"><option value="5">5초</option><option value="10">10초</option><option value="30">30초</option><option value="60">60초</option></select></label>
+              <label class="field field-switch"><span>자동 점검</span><input id="setting-auto" type="checkbox" role="switch"><span class="switch-ui" aria-hidden="true"></span></label>
+              <label class="field"><span>지연 판단 기준 (ms)</span><input id="setting-warning" type="number" min="100" step="100" required></label>
+              <label class="field"><span>장애 판단 기준 (ms)</span><input id="setting-critical" type="number" min="200" step="100" required></label>
+              <label class="field"><span>요청 타임아웃 (ms)</span><input id="setting-timeout" type="number" min="500" step="500" required></label>
+              <label class="field"><span>장애 확정 연속 실패</span><input id="setting-failures" type="number" min="1" max="10" required><small>그 전까지는 ‘이상 감지’로 표시합니다.</small></label>
+            </div>
+          </section>
+          <section class="settings-section" aria-labelledby="server-settings-title">
+            <div class="subsection-heading"><h3 id="server-settings-title">서버 관리</h3><button class="button button-secondary button-small" id="add-server-button" type="button">＋ 서버 추가</button></div>
+            <div class="server-settings-list" id="server-settings-list"></div>
+          </section>
+          <p class="form-error" id="settings-error" role="alert"></p>
+        </div>
+        <footer class="modal-footer">
+          <button class="button button-danger-ghost" id="reset-settings-button" type="button">설정 초기화</button>
+          <div><button class="button button-secondary" type="button" data-close-modal="settings-modal">취소</button><button class="button button-primary" type="submit">설정 저장</button></div>
+        </footer>
+      </form>
+    </section>
+  </div>
+
+  <div class="modal-backdrop modal-nested" id="server-modal" hidden>
+    <section class="modal modal-small" role="dialog" aria-modal="true" aria-labelledby="server-modal-title">
+      <header class="modal-header"><h2 id="server-modal-title">서버 추가</h2><button class="icon-button modal-close" type="button" data-close-modal="server-modal" aria-label="서버 편집 닫기">×</button></header>
+      <form id="server-form" novalidate>
+        <div class="settings-content">
+          <input id="server-id" type="hidden">
+          <label class="field"><span>시스템명</span><input id="server-name" type="text" maxlength="40" placeholder="예: ticketAP-3" required></label>
+          <label class="field"><span>API 주소</span><input id="server-url" type="url" placeholder="https://example.com/internal/monitor/health" required></label>
+          <label class="field field-switch"><span>사용 여부</span><input id="server-enabled" type="checkbox" role="switch"><span class="switch-ui" aria-hidden="true"></span></label>
+          <label class="field"><span>목업 응답 유형</span><select id="server-mock-type"><option value="normal">정상 응답</option><option value="delay">3초 이상 지연</option><option value="criticalDelay">10초 이상 지연</option><option value="http500">HTTP 500 오류</option><option value="network">네트워크 오류</option><option value="timeout">15초 타임아웃</option><option value="random">정상과 오류 무작위 발생</option></select></label>
+          <p class="form-error" id="server-error" role="alert"></p>
+        </div>
+        <footer class="modal-footer"><button class="button button-secondary" type="button" data-close-modal="server-modal">취소</button><button class="button button-primary" type="submit">서버 저장</button></footer>
+      </form>
+    </section>
+  </div>
+
+  <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
+  <template id="server-card-template">
+    <article class="server-card">
+      <div class="card-accent" aria-hidden="true"></div>
+      <header class="server-card-header">
+        <div><p class="server-index"></p><h3 class="server-name"></h3><p class="server-url"></p></div>
+        <span class="status-badge"><span class="status-symbol" aria-hidden="true"></span><span class="status-label"></span></span>
+      </header>
+      <div class="primary-metric"><span>전체 응답시간</span><strong class="response-time">—</strong></div>
+      <dl class="server-metrics">
+        <div><dt>HTTP 상태코드</dt><dd class="http-code">—</dd></div>
+        <div><dt>마지막 정상</dt><dd class="last-normal">—</dd></div>
+        <div><dt>마지막 점검</dt><dd class="last-check">—</dd></div>
+        <div><dt>연속 성공</dt><dd class="success-count">0회</dd></div>
+        <div><dt>연속 실패</dt><dd class="failure-count">0회</dd></div>
+      </dl>
+      <div class="error-box"><span aria-hidden="true">!</span><p class="error-message">최근 오류가 없습니다.</p></div>
+      <button class="button button-check" type="button"><span aria-hidden="true">↻</span> 이 서버 즉시 점검</button>
+    </article>
+  </template>
+</body>
+</html>
